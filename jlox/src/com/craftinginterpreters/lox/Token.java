@@ -1,10 +1,10 @@
 package com.craftinginterpreters.lox;
 
 public class Token {
-    final private TokenType type;
-    final private String lexeme;
-    final private Object literal;
-    final private int line;
+    final TokenType type;
+    final String lexeme;
+    final Object literal;
+    final int line;
 
     Token(TokenType type, String lexeme, Object literal, int line) {
         this.type = type;
@@ -15,6 +15,6 @@ public class Token {
 
     @Override
     public String toString() {
-        return type + " "  + lexeme + " " + literal;
+        return type + " " + lexeme + " " + literal;
     }
 }
