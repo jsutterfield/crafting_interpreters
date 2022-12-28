@@ -25,3 +25,7 @@ hs_err_pid*
 .gradle/
 .idea/
 jlox.iml
+
+clox/scratch
+clox/scratch.dSYM
+clox/cmake-build-debug
