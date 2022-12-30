@@ -29,7 +29,7 @@ union.
 Or, as another example, the VM may read an "addition" instruction. In that case, it pops 2 values off the stack, adds them,
 and pushes the result back onto the stack. This stack is used to store temporary values while the program is executing.
 An expression may, say, add 2 numbers, and then the following expressions may need to divide it. The stack is used
-as space to store these values and results during execution.
+as space to store these values and results during execution of the program.
 
 ## Why Use a VM?
 It's _almost_ as fast as native code, but still allows you to be far more portable since you can write the VM in C
