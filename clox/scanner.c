@@ -81,6 +81,10 @@ static void skipWhitespace() {
                     return;
                 }
                 break;
+            case '\n':
+                scanner.line++;
+                advance();
+                break;
             default:
                 return;
         }
@@ -142,6 +146,8 @@ static TokenType identifierType() {
         case 'w':
             return checkKeyword(1, 4, "hile", TOKEN_WHILE);
     }
+
+    return TOKEN_IDENTIFIER;
 }
 
 static Token identifier() {
