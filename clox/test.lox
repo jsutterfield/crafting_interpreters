@@ -1,6 +1,9 @@
-{
-    var x = 5;
-    print x;
-    x = 7;
-    print x;
+for (var i = 0; i < 5; i = i + 1) {
+    print i;
+}
+
+var y = 0;
+while (y < 3) {
+    print y;
+    y = y + 1;
 }
