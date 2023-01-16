@@ -4,11 +4,12 @@
 #include "debug.h"
 
 void disassembleChunk(Chunk* chunk, const char* name) {
-    printf("== %s ==\n", name);
+    printf("== start %s ==\n", name);
 
     for (int offset = 0; offset < chunk->count;) {
         offset = disassembleInstruction(chunk, offset);
     }
+    printf("== end %s ==\n\n", name);
 }
 
 static int simpleInstruction(const char* name, int offset) {
@@ -62,6 +63,8 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return jumpInstruction("OP_JUMP_IF_FALSE", 1, chunk, offset);
         case OP_LOOP:
             return jumpInstruction("OP_LOOP", -1, chunk, offset);
+        case OP_CALL:
+            return byteInstruction("OP_CALL", chunk, offset);
         case OP_RETURN:
             return simpleInstruction("OP_RETURN", offset);
         case OP_PRINT:

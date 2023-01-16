@@ -106,7 +106,7 @@ When we're parsing the source code and come across a block (`i.e.` an open `{`) 
 to be a local variable. We keep track of what scope we're in via a field in a global `Compiler` struct. When we're in a local
 scope and come across a variable declaration, we first parse the expression which results in a value being pushed onto the
 stack. If there's no expression statement, then we push the constant value `nil` onto the stack. For other expression
-statements, this value would then be immediately popped off the stack, but for variable declarations we leave it there
+statements, this value would then be immediately popped off the stack, but for variable declarations *we leave it there*
 (i.e., we don't emit an `OP_POP` instruction like we would for other expression statements). We then add an entry for this
 local variable in an array of `Local` structs also found in the `Compiler` struct. Each `Local` reports its name and the
 current scope which is what we'll use later when resolving these local variables.
@@ -163,3 +163,39 @@ Here's the code and stack disassembly for a small code sample with local variabl
 
 When we leave a scope (i.e., we parse a closing `}`) we pop all the local variable declared in that scope. It's like what
 the `;` does for normal expression statements.
+
+### Functions
+Each function is given its own `Chunk` which will include the bytecode needed to execute the function:
+```
+typedef struct {
+  Obj obj;
+  int arity; // how much args it takes
+  Chunk chunk;
+  ObjString* name; // useful for debugging
+} ObjFunction;
+```
+
+Note that functions are first-class objects in Lox, meaning they can be assigned to variables and passed around as values,
+so functions are a type of Object.
+
+The VM works by always running a function. FuncA calls FuncB which calls FuncC. It executes the bytecode of the chunk for
+each function, and then returns to the calling function. To make this execution model consistent for all contexts, the top
+level code in a lox script (i.e., code not defined in an explicit function) is put into an implicit "main" function which
+is where execution will start.
+
+Functions also introduce a change to how local variables are stored on the stack. Before functions, we would allocate
+local variables on the stack (see section above for how that works). The problem with doing that for functions is it would
+require separate stack space for _all_ functions and, more importantly, it doesn't work with recursion b/c a function can
+be called in all kinds of contexts.
+
+Instead, functions makes use of a "call frame" where it tracks its local variables on the stack similar to how we approached
+it before, but instead of using an offset based on the bottom of the stack, we use an offset based on the top of the stack
+when calculating where the variable is. Each function gets its own "window" of stack space (e.g., 4 slots) which it will 
+use for its locals but this window will be found in different absolute positions on the stack depending on where the function
+is called.
+
+> At the beginning of each function call, the VM records the location of the first slot where that function’s own locals begin.
+> The instructions for working with local variables access them by a slot index relative to that, instead of relative to 
+> the bottom of the stack like they do today. At compile time, we calculate those relative slots. At runtime, we convert 
+> that relative slot to an absolute stack index by adding the function call’s starting slot.
+
