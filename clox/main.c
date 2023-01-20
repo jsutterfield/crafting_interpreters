@@ -58,6 +58,7 @@ static void runFile(const char* path) {
 }
 
 int main(int argc, const char* argv[]) {
+    printf("size is %lu\n", sizeof( Obj));
     initVM();
 
     if (argc == 1) {
