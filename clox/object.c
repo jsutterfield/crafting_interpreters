@@ -17,10 +17,23 @@ static Obj* allocateObject(size_t size, ObjType type) {
     vm.objects = object;
 
 #ifdef DEBUG_LOG_GC
-    printf("%p allocate %zu for %d\n", (void*)object, size, type);
+    printf("%p allocate %zu for %s\n", (void*)object, size, objTypeToString(type));
 #endif
 
     return object;
+}
+
+ObjClass* newClass(ObjString* name) {
+    ObjClass* klass = ALLOCATE_OBJ(ObjClass, OBJ_CLASS);
+    klass->name = name;
+    return klass;
+}
+
+ObjInstance* newInstance(ObjClass* klass) {
+    ObjInstance* instance = ALLOCATE_OBJ(ObjInstance, OBJ_INSTANCE);
+    instance->klass = klass;
+    initTable(&instance->fields);
+    return instance;
 }
 
 ObjClosure* newClosure(ObjFunction* function) {
@@ -111,7 +124,12 @@ static void printFunction(ObjFunction* function) {
 }
 
 void printObject(Value value) {
+    // printf("%p -> ", &(*AS_OBJ(value)));
+
     switch (OBJ_TYPE(value)) {
+        case OBJ_CLASS:
+            printf("%s", AS_CLASS(value)->name->chars);
+            break;
         case OBJ_STRING:
             printf("%s", AS_CSTRING(value));
             break;
@@ -121,8 +139,32 @@ void printObject(Value value) {
         case OBJ_FUNCTION:
             printFunction(AS_FUNCTION(value));
             break;
+        case OBJ_INSTANCE:
+            printf("%s instance", AS_INSTANCE(value)->klass->name->chars);
+            break;
         case OBJ_NATIVE:
             printf("<native fn>");
             break;
     }
+}
+
+char* objTypeToString(ObjType type) {
+    switch (type) {
+        case OBJ_CLASS:
+            return "class";
+        case OBJ_INSTANCE:
+            return "instance";
+        case OBJ_STRING:
+            return "string";
+        case OBJ_CLOSURE:
+            return "closure";
+        case OBJ_FUNCTION:
+            return "function";
+        case OBJ_NATIVE:
+            return "<native fn>";
+        case OBJ_UPVALUE:
+            return "upvalue";
+    }
+
+    return "unknown";
 }

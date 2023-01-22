@@ -3,7 +3,8 @@
 
 #include "chunk.h"
 
-void disassembleChunk(Chunk* chunk, const char* name);
-int disassembleInstruction(Chunk* chunk, int offset);
+void printValues(ValueArray values, const char *name);
+void disassembleChunk(Chunk* chunk, const char* name, const uint8_t* ip);
+int disassembleInstruction(Chunk* chunk, int offset, const uint8_t* ip);
 
 #endif

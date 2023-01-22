@@ -3,11 +3,11 @@
 #include "memory.h"
 #include "object.h"
 #include "vm.h"
+#include "compiler.h"
 
 #ifdef DEBUG_LOG_GC
 #include <stdio.h>
 #include "debug.h"
-#include "compiler.h"
 #endif
 
 #define GC_HEAP_GROW_FACTOR 2
@@ -90,6 +90,17 @@ static void blackenObject(Obj* object) {
             markArray(&function->chunk.constants);
             break;
         }
+        case OBJ_INSTANCE: {
+            ObjInstance* instance = (ObjInstance*)object;
+            markObject((Obj*)instance->klass);
+            markTable(&instance->fields);
+            break;
+        }
+        case OBJ_CLASS: {
+            ObjClass* klass = (ObjClass*)object;
+            markObject((Obj*)klass->name);
+            break;
+        }
         case OBJ_UPVALUE:
             markValue(((ObjUpvalue*)object)->closed);
             break;
@@ -101,7 +112,7 @@ static void blackenObject(Obj* object) {
 
 static void freeObject(Obj* object) {
 #ifdef DEBUG_LOG_GC
-    printf("%p free type %d\n", (void*)object, object->type);
+    printf("%p free type %s\n", (void*)object, objTypeToString(object->type));
 #endif
 
     switch (object->type) {
@@ -121,6 +132,16 @@ static void freeObject(Obj* object) {
             ObjFunction* function = (ObjFunction*)object;
             freeChunk(&function->chunk);
             FREE(ObjFunction, object);
+            break;
+        }
+        case OBJ_CLASS: {
+            FREE(ObjClass, object);
+            break;
+        }
+        case OBJ_INSTANCE: {
+            ObjInstance* instance = (ObjInstance*)object;
+            freeTable(&instance->fields);
+            FREE(ObjInstance, object);
             break;
         }
         case OBJ_NATIVE:

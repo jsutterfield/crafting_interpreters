@@ -64,7 +64,7 @@ void initVM() {
     initTable(&vm.globals);
     initTable(&vm.strings);
 
-    defineNative("clock", clockNative);
+    // defineNative("clock", clockNative);
 }
 
 void freeVM() {
@@ -111,6 +111,11 @@ static bool callValue(Value callee, int argCount) {
         switch (OBJ_TYPE(callee)) {
             case OBJ_CLOSURE:
                 return call(AS_CLOSURE(callee), argCount);
+            case OBJ_CLASS: {
+                ObjClass* klass = AS_CLASS(callee);
+                vm.stackTop[-argCount - 1] = OBJ_VAL(newInstance(klass));
+                return true;
+            }
             case OBJ_NATIVE: {
                 NativeFn native = AS_NATIVE(callee);
                 Value result = native(argCount, vm.stackTop - argCount);
@@ -201,20 +206,34 @@ static InterpretResult run() {
     } while (false)
 
 #ifdef DEBUG_TRACE_EXECUTION
-    printf("Start of code execution in VM\n");
-    printf("Each line will print the current stack, and below that the instruction being executed\n\n");
+    printf("\n=============================\n");
+    printf("Start of code execution in VM. Each line will print the \n");
+    printf("current stack and below that the instruction being executed.\n");
+    printf("The format the instruction is:\n");
+    printf("<codeOffset> <line> <name> <constantOffset> <value>\n");
+    printf("============================\n\n");
 #endif
 
     for (;;) {
 #ifdef DEBUG_TRACE_EXECUTION
-        printf("          ");
+//        printf("Executing <%s>\n ",
+//               frame->closure->function->name == NULL ? "script" : frame->closure->function->name->chars
+//        );
         for (Value *slot = vm.stack; slot < vm.stackTop; slot++) {
+            if (slot == frame->slots) {
+                printf(" # ");
+            }
+
             printf("[ ");
             printValue(*slot);
             printf(" ]");
         }
         printf("\n");
-        disassembleInstruction(&frame->closure->function->chunk, (int)(frame->ip - frame->closure->function->chunk.code));
+        disassembleChunk(
+                &frame->closure->function->chunk,
+                frame->closure->function->name == NULL ? "script" : frame->closure->function->name->chars,
+                frame->ip
+        );
 #endif
         switch (READ_BYTE()) {
             case OP_CONSTANT: {
@@ -265,6 +284,38 @@ static InterpretResult run() {
                     runtimeError("Undefined variable '%s'.", name->chars);
                     return INTERPRET_RUNTIME_ERROR;
                 }
+                break;
+            }
+            case OP_GET_PROPERTY: {
+                if (!IS_INSTANCE(peek(0))) {
+                    runtimeError("Only instances have properties.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                ObjInstance* instance = AS_INSTANCE(peek(0));
+                ObjString* name = READ_STRING();
+
+                Value value;
+                if (tableGet(&instance->fields, name, &value)) {
+                    pop(); // Instance.
+                    push(value);
+                    break;
+                }
+
+                runtimeError("Undefined property '%s'.", name->chars);
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            case OP_SET_PROPERTY: {
+                if (!IS_INSTANCE(peek(1))) {
+                    runtimeError("Only instances have fields.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                ObjInstance* instance = AS_INSTANCE(peek(1));
+                tableSet(&instance->fields, READ_STRING(), peek(0));
+                Value value = pop();
+                pop();
+                push(value);
                 break;
             }
             case OP_EQUAL: {
@@ -363,6 +414,9 @@ static InterpretResult run() {
             case OP_CLOSE_UPVALUE:
                 closeUpvalues(vm.stackTop - 1);
                 pop();
+                break;
+            case OP_CLASS:
+                push(OBJ_VAL(newClass(READ_STRING())));
                 break;
             case OP_RETURN: {
                 Value result = pop();

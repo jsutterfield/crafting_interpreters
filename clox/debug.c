@@ -4,13 +4,21 @@
 #include "debug.h"
 #include "object.h"
 
-void disassembleChunk(Chunk* chunk, const char* name) {
-    printf("== start %s ==\n", name);
-
+void disassembleChunk(Chunk* chunk, const char* name, const uint8_t* ip) {
+    printf("== code %s ==\n", name);
     for (int offset = 0; offset < chunk->count;) {
-        offset = disassembleInstruction(chunk, offset);
+        offset = disassembleInstruction(chunk, offset, ip);
     }
-    printf("== end %s ==\n\n", name);
+    printf("\n");
+}
+
+void printValues(ValueArray values, const char *name) {
+    printf("== values %s ==\n", name);
+    for (int i = 0; i < values.count; i++) {
+        printf("%04d\t", i);
+        printValue(values.values[i]);
+        printf("\n");
+    }
 }
 
 static int simpleInstruction(const char* name, int offset) {
@@ -47,7 +55,10 @@ static int longConstantInstruction(const char* name, Chunk* chunk, int offset) {
     return offset + 4;
 }
 
-int disassembleInstruction(Chunk* chunk, int offset) {
+int disassembleInstruction(Chunk* chunk, int offset, const uint8_t* ip) {
+    bool isExecutingInstruction = ip != NULL && ip == &chunk->code[offset];
+    printf("%s", isExecutingInstruction ? "=> " : "   ");
+
     printf("%04d ", offset);
     int line = getLine(chunk, offset);
     if (offset > 0 && line == getLine(chunk, offset - 1)) {
@@ -86,6 +97,12 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_CLOSE_UPVALUE", offset);
         case OP_RETURN:
             return simpleInstruction("OP_RETURN", offset);
+        case OP_CLASS:
+            return constantInstruction("OP_CLASS", chunk, offset);
+        case OP_GET_PROPERTY:
+            return constantInstruction("OP_GET_PROPERTY", chunk, offset);
+        case OP_SET_PROPERTY:
+            return constantInstruction("OP_SET_PROPERTY", chunk, offset);
         case OP_PRINT:
             return simpleInstruction("OP_PRINT", offset);
         case OP_POP:
