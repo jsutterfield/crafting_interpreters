@@ -693,6 +693,16 @@ static void classDeclaration() {
     consume(TOKEN_RIGHT_BRACE, "Expect '}' after class body.");
 }
 
+static void delStatement() {
+    advance();
+    variable(false);
+    consume(TOKEN_DOT, "Expect '.' man...");
+    consume(TOKEN_IDENTIFIER, "Expect property name after '.'.");
+    uint8_t name = identifierConstant(&parser.previous);
+    emitBytes(OP_DEL_PROPERTY, name);
+    consume(TOKEN_SEMICOLON, "You need a semicolon");
+}
+
 static void funDeclaration() {
     uint8_t global = parseVariable("Expect function name.");
     markInitialized();
@@ -867,6 +877,8 @@ static void declaration() {
 static void statement() {
     if (match(TOKEN_PRINT)) {
         printStatement();
+    } else if (match(TOKEN_DEL)) {
+        delStatement();
     } else if (match(TOKEN_RETURN)) {
         returnStatement();
     } else if (match(TOKEN_IF)) {

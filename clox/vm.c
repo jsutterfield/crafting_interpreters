@@ -302,8 +302,12 @@ static InterpretResult run() {
                     break;
                 }
 
-                runtimeError("Undefined property '%s'.", name->chars);
-                return INTERPRET_RUNTIME_ERROR;
+                pop();
+                push(NIL_VAL);
+                break;
+//
+//                runtimeError("Undefined property '%s'.", name->chars);
+//                return INTERPRET_RUNTIME_ERROR;
             }
             case OP_SET_PROPERTY: {
                 if (!IS_INSTANCE(peek(1))) {
@@ -316,6 +320,20 @@ static InterpretResult run() {
                 Value value = pop();
                 pop();
                 push(value);
+                break;
+            }
+            case OP_DEL_PROPERTY: {
+                if (!IS_INSTANCE(peek(0))) {
+                    runtimeError("Only instances have fields.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                ObjInstance* instance = AS_INSTANCE(peek(0));
+                ObjString* name = READ_STRING();
+
+                tableDelete(&instance->fields, name);
+                pop(); // Instance.
+
                 break;
             }
             case OP_EQUAL: {

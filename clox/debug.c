@@ -103,6 +103,8 @@ int disassembleInstruction(Chunk* chunk, int offset, const uint8_t* ip) {
             return constantInstruction("OP_GET_PROPERTY", chunk, offset);
         case OP_SET_PROPERTY:
             return constantInstruction("OP_SET_PROPERTY", chunk, offset);
+        case OP_DEL_PROPERTY:
+            return constantInstruction("OP_DELETE_PROPERTY", chunk, offset);
         case OP_PRINT:
             return simpleInstruction("OP_PRINT", offset);
         case OP_POP:
