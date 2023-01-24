@@ -47,6 +47,15 @@ static int constantInstruction(const char* name, Chunk* chunk, int offset) {
     return offset + 2;
 }
 
+static int invokeInstruction(const char* name, Chunk* chunk, int offset) {
+    uint8_t constant = chunk->code[offset + 1];
+    uint8_t argCount = chunk->code[offset + 2];
+    printf("%-16s (%d args) %4d '", name, argCount, constant);
+    printValue(chunk->constants.values[constant]);
+    printf("'\n");
+    return offset + 3;
+}
+
 static int longConstantInstruction(const char* name, Chunk* chunk, int offset) {
     uint32_t constant = chunk->code[offset + 1] | (chunk->code[offset + 2] << 8) | (chunk->code[offset + 3] << 16);
     printf("%-16s %4d '", name, constant);
@@ -77,6 +86,8 @@ int disassembleInstruction(Chunk* chunk, int offset, const uint8_t* ip) {
             return jumpInstruction("OP_LOOP", -1, chunk, offset);
         case OP_CALL:
             return byteInstruction("OP_CALL", chunk, offset);
+        case OP_INVOKE:
+            return invokeInstruction("OP_INVOKE", chunk, offset);
         case OP_CLOSURE: {
             offset++;
             uint8_t constant = chunk->code[offset++];
@@ -99,6 +110,8 @@ int disassembleInstruction(Chunk* chunk, int offset, const uint8_t* ip) {
             return simpleInstruction("OP_RETURN", offset);
         case OP_CLASS:
             return constantInstruction("OP_CLASS", chunk, offset);
+        case OP_METHOD:
+            return constantInstruction("OP_METHOD", chunk, offset);
         case OP_GET_PROPERTY:
             return constantInstruction("OP_GET_PROPERTY", chunk, offset);
         case OP_SET_PROPERTY:
